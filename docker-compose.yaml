@@ -1,0 +1,280 @@
+x-common-env: &common-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  TZ: ${TZ}
+  UMASK: ${UMASK}
+
+services:
+  # =====================================================
+  # Download Clients
+  # =====================================================
+
+  aria2:
+    image: p3terx/aria2-pro:latest
+    container_name: "${CONTAINER_PREFIX}aria2"
+    hostname: "${CONTAINER_PREFIX}aria2"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/aria2:/config
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "6800:6800"
+      - "6880:6880"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  qbittorrent:
+    image: ghcr.io/hotio/qbittorrent:release-2a2af59
+    container_name: "${CONTAINER_PREFIX}qbittorrent"
+    hostname: "${CONTAINER_PREFIX}qbittorrent"
+    environment:
+      <<: *common-env
+      WEBUI_PORT: "8080"
+      VPN_ENABLED: ${VPN_ENABLED}
+      VPN_CONF: ${VPN_CONF}
+      VPN_PROVIDER: ${VPN_PROVIDER}
+      VPN_LAN_NETWORK: ${VPN_LAN_NETWORK}
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+    volumes:
+      - ${CONFIG_PATH}/qbittorrent:/config
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "8080:8080"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  rdtclient:
+    image: rogerfar/rdtclient:2.0
+    container_name: "${CONTAINER_PREFIX}rdtclient"
+    hostname: "${CONTAINER_PREFIX}rdtclient"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/rdtclient:/data/db
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "6500:6500"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - aria2
+
+  slskd:
+    image: slskd/slskd:latest
+    container_name: "${CONTAINER_PREFIX}slskd"
+    hostname: "${CONTAINER_PREFIX}slskd"
+    environment:
+      <<: *common-env
+      SLSKD_REMOTE_CONFIGURATION: "true"
+    volumes:
+      - ${CONFIG_PATH}/slskd:/app
+      - ${DATA_PATH}:/data
+    ports:
+      - "5030:5030"
+      - "5031:5031"
+      - "50300:50300"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  # =====================================================
+  # Media Managers
+  # =====================================================
+
+  radarr:
+    image: ghcr.io/linuxserver/radarr:latest
+    container_name: "${CONTAINER_PREFIX}radarr"
+    hostname: "${CONTAINER_PREFIX}radarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/radarr/config:/config
+      - ${CONFIG_PATH}/radarr/extended/services:/custom-servides.d
+      - ${CONFIG_PATH}/radarr/extended/cont-init:/custom-cont-init.d
+      - ${DATA_PATH}/:/data
+    ports:
+      - "7878:7878"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - prowlarr
+      - qbittorrent
+      - rdtclient
+
+  sonarr:
+    image: ghcr.io/linuxserver/sonarr:latest
+    container_name: "${CONTAINER_PREFIX}sonarr"
+    hostname: "${CONTAINER_PREFIX}sonarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/sonarr/config:/config
+      - ${CONFIG_PATH}/sonarr/extended/services:/custom-servides.d
+      - ${CONFIG_PATH}/sonarr/extended/cont-init:/custom-cont-init.d
+      - ${DATA_PATH}/:/data
+    ports:
+      - "8989:8989"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - prowlarr
+      - qbittorrent
+      - rdtclient
+
+  lidarr:
+    image: ghcr.io/linuxserver/lidarr:latest
+    container_name: "${CONTAINER_PREFIX}lidarr"
+    hostname: "${CONTAINER_PREFIX}lidarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/lidarr/config:/config
+      - ${CONFIG_PATH}/lidarr/extended/services:/custom-servides.d
+      - ${CONFIG_PATH}/lidarr/extended/cont-init:/custom-cont-init.d
+      - ${DATA_PATH}/:/data
+    ports:
+      - "8686:8686"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - prowlarr
+      - qbittorrent
+      - rdtclient
+
+  soularr:
+    image: mrusse08/soularr:latest
+    container_name: "${CONTAINER_PREFIX}soularr"
+    hostname: "${CONTAINER_PREFIX}soularr"
+    environment:
+      <<: *common-env
+      SCRIPT_INTERVAL: "60"
+    volumes:
+      - ${CONFIG_PATH}/soularr:/data
+      - ${DATA_PATH}/:/data
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - lidarr
+      - slskd
+
+  # =====================================================
+  # Indexers & Related Tools
+  # =====================================================
+
+  prowlarr:
+    image: ghcr.io/hotio/prowlarr:latest
+    container_name: "${CONTAINER_PREFIX}prowlarr"
+    hostname: "${CONTAINER_PREFIX}prowlarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/prowlarr:/config
+    ports:
+      - "9696:9696"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - flaresolverr
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: "${CONTAINER_PREFIX}flaresolverr"
+    hostname: "${CONTAINER_PREFIX}flaresolverr"
+    environment:
+      TZ: ${TZ}
+      LOG_LEVEL: "info"
+    ports:
+      - "8191:8191"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  # =====================================================
+  # Media Tools & Utilities
+  # =====================================================
+
+  bazarr:
+    image: ghcr.io/linuxserver/bazarr:latest
+    container_name: "${CONTAINER_PREFIX}bazarr"
+    hostname: "${CONTAINER_PREFIX}bazarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/bazarr:/config
+      - ${DATA_PATH}/media:/data/media
+    ports:
+      - "6767:6767"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - radarr
+      - sonarr
+
+  overseerr:
+    image: ghcr.io/hotio/overseerr:latest
+    container_name: "${CONTAINER_PREFIX}overseerr"
+    hostname: "${CONTAINER_PREFIX}overseerr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/overseerr:/app/config
+    ports:
+      - "5055:5055"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - radarr
+      - sonarr
+
+  tautulli:
+    image: ghcr.io/hotio/tautulli:latest
+    container_name: "${CONTAINER_PREFIX}tautulli"
+    hostname: "${CONTAINER_PREFIX}tautulli"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/tautulli:/config
+    ports:
+      - "8181:8181"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  medialytics:
+    image: ghcr.io/drewpeifer/medialytics:latest
+    container_name: "${CONTAINER_PREFIX}medialytics"
+    hostname: "${CONTAINER_PREFIX}medialytics"
+    environment:
+      <<: *common-env
+      SERVER_IP: ${PLEX_URL}
+      SERVER_TOKEN: ${PLEX_TOKEN}
+    ports:
+      - "8088:80"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  wizarr:
+    image: ghcr.io/wizarrrr/wizarr:beta
+    container_name: "${CONTAINER_PREFIX}wizarr"
+    hostname: "${CONTAINER_PREFIX}wizarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/wizarr:/data/database
+    ports:
+      - "5690:5690"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  subsyncarr:
+    image: mrorbitman/subsyncarr:latest
+    container_name: "${CONTAINER_PREFIX}subsyncarr"
+    hostname: "${CONTAINER_PREFIX}subsyncarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${DATA_PATH}/media:/scan_dir
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
