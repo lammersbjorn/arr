@@ -154,7 +154,23 @@ services:
       SCRIPT_INTERVAL: "60"
     volumes:
       - ${CONFIG_PATH}/soularr:/data
-      - ${DATA_PATH}/:/data
+      - ${DATA_PATH}/torrents/slskd/downloaded:/downloads
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - lidarr
+      - slskd
+
+  soularr2:
+    image: mrusse08/soularr:latest
+    container_name: "${CONTAINER_PREFIX}soularr2"
+    hostname: "${CONTAINER_PREFIX}soularr2"
+    environment:
+      <<: *common-env
+      SCRIPT_INTERVAL: "60"
+    volumes:
+      - ${CONFIG_PATH}/soularr2:/data
+      - ${DATA_PATH}/torrents/slskd/downloaded:/downloads
     restart: ${RESTART_POLICY}
     network_mode: ${NETWORK_MODE}
     depends_on:
