@@ -93,7 +93,7 @@ services:
       <<: *common-env
     volumes:
       - ${CONFIG_PATH}/radarr/config:/config
-      - ${CONFIG_PATH}/radarr/extended/services:/custom-servides.d
+      - ${CONFIG_PATH}/radarr/extended/services:/custom-services.d
       - ${CONFIG_PATH}/radarr/extended/cont-init:/custom-cont-init.d
       - ${DATA_PATH}/:/data
     ports:
@@ -113,7 +113,7 @@ services:
       <<: *common-env
     volumes:
       - ${CONFIG_PATH}/sonarr/config:/config
-      - ${CONFIG_PATH}/sonarr/extended/services:/custom-servides.d
+      - ${CONFIG_PATH}/sonarr/extended/services:/custom-services.d
       - ${CONFIG_PATH}/sonarr/extended/cont-init:/custom-cont-init.d
       - ${DATA_PATH}/:/data
     ports:
