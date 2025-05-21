@@ -194,7 +194,7 @@ services:
     restart: ${RESTART_POLICY}
     network_mode: ${NETWORK_MODE}
     depends_on:
-      - flaresolverr
+      - byparr
 
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
