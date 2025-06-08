@@ -1,0 +1,84 @@
+x-common-env: &common-env
+  PUID: ${PUID}
+  PGID: ${PGID}
+  TZ: ${TZ}
+  UMASK: ${UMASK}
+
+services:
+  # =====================================================
+  # Download Clients
+  # =====================================================
+
+  aria2:
+    image: p3terx/aria2-pro:latest
+    container_name: "${CONTAINER_PREFIX}aria2"
+    hostname: "${CONTAINER_PREFIX}aria2"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/aria2:/config
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "6800:6800"
+      - "6880:6880"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  rdtclient:
+    image: rogerfar/rdtclient:2.0
+    container_name: "${CONTAINER_PREFIX}rdtclient"
+    hostname: "${CONTAINER_PREFIX}rdtclient"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/rdtclient:/data/db
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "6500:6500"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+    depends_on:
+      - aria2
+
+  qbittorrent:
+    image: ghcr.io/hotio/qbittorrent:latest
+    container_name: "${CONTAINER_PREFIX}qbittorrent"
+    hostname: "${CONTAINER_PREFIX}qbittorrent"
+    environment:
+      <<: *common-env
+      WEBUI_PORT: "8080"
+      VPN_ENABLED: ${VPN_ENABLED}
+      VPN_CONF: ${VPN_CONF}
+      VPN_PROVIDER: ${VPN_PROVIDER}
+      VPN_LAN_NETWORK: ${VPN_LAN_NETWORK}
+    cap_add:
+      - NET_ADMIN
+    sysctls:
+      - net.ipv4.conf.all.src_valid_mark=1
+      - net.ipv6.conf.all.disable_ipv6=1
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - ${CONFIG_PATH}/qbittorrent:/config
+      - ${DATA_PATH}/torrents:/data/torrents
+    ports:
+      - "8080:8080"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  slskd:
+    image: slskd/slskd:latest
+    container_name: "${CONTAINER_PREFIX}slskd"
+    hostname: "${CONTAINER_PREFIX}slskd"
+    environment:
+      <<: *common-env
+      SLSKD_REMOTE_CONFIGURATION: "true"
+    volumes:
+      - ${CONFIG_PATH}/slskd:/app
+      - ${DATA_PATH}:/data
+    ports:
+      - "5030:5030"
+      - "5031:5031"
+      - "50300:50300"
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
