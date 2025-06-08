@@ -24,29 +24,29 @@ services:
     restart: ${RESTART_POLICY}
     network_mode: ${NETWORK_MODE}
 
-  qbittorrent:
-    image: ghcr.io/hotio/qbittorrent:release-2a2af59
-    container_name: "${CONTAINER_PREFIX}qbittorrent"
-    hostname: "${CONTAINER_PREFIX}qbittorrent"
-    environment:
-      <<: *common-env
-      WEBUI_PORT: "8080"
-      VPN_ENABLED: ${VPN_ENABLED}
-      VPN_CONF: ${VPN_CONF}
-      VPN_PROVIDER: ${VPN_PROVIDER}
-      VPN_LAN_NETWORK: ${VPN_LAN_NETWORK}
-    cap_add:
-      - NET_ADMIN
-    sysctls:
-      - net.ipv4.conf.all.src_valid_mark=1
-      - net.ipv6.conf.all.disable_ipv6=1
-    volumes:
-      - ${CONFIG_PATH}/qbittorrent:/config
-      - ${DATA_PATH}/torrents:/data/torrents
-    ports:
-      - "8080:8080"
-    restart: ${RESTART_POLICY}
-    network_mode: ${NETWORK_MODE}
+  # qbittorrent:
+  #   image: ghcr.io/hotio/qbittorrent:release-2a2af59
+  #   container_name: "${CONTAINER_PREFIX}qbittorrent"
+  #   hostname: "${CONTAINER_PREFIX}qbittorrent"
+  #   environment:
+  #     <<: *common-env
+  #     WEBUI_PORT: "8080"
+  #     VPN_ENABLED: ${VPN_ENABLED}
+  #     VPN_CONF: ${VPN_CONF}
+  #     VPN_PROVIDER: ${VPN_PROVIDER}
+  #     VPN_LAN_NETWORK: ${VPN_LAN_NETWORK}
+  #   cap_add:
+  #     - NET_ADMIN
+  #   sysctls:
+  #     - net.ipv4.conf.all.src_valid_mark=1
+  #     - net.ipv6.conf.all.disable_ipv6=1
+  #   volumes:
+  #     - ${CONFIG_PATH}/qbittorrent:/config
+  #     - ${DATA_PATH}/torrents:/data/torrents
+  #   ports:
+  #     - "8085:8080"
+  #   restart: ${RESTART_POLICY}
+  #   network_mode: ${NETWORK_MODE}
 
   rdtclient:
     image: rogerfar/rdtclient:2.0
@@ -64,22 +64,22 @@ services:
     depends_on:
       - aria2
 
-  slskd:
-    image: slskd/slskd:latest
-    container_name: "${CONTAINER_PREFIX}slskd"
-    hostname: "${CONTAINER_PREFIX}slskd"
-    environment:
-      <<: *common-env
-      SLSKD_REMOTE_CONFIGURATION: "true"
-    volumes:
-      - ${CONFIG_PATH}/slskd:/app
-      - ${DATA_PATH}:/data
-    ports:
-      - "5030:5030"
-      - "5031:5031"
-      - "50300:50300"
-    restart: ${RESTART_POLICY}
-    network_mode: ${NETWORK_MODE}
+  # slskd:
+  #   image: slskd/slskd:latest
+  #   container_name: "${CONTAINER_PREFIX}slskd"
+  #   hostname: "${CONTAINER_PREFIX}slskd"
+  #   environment:
+  #     <<: *common-env
+  #     SLSKD_REMOTE_CONFIGURATION: "true"
+  #   volumes:
+  #     - ${CONFIG_PATH}/slskd:/app
+  #     - ${DATA_PATH}:/data
+  #   ports:
+  #     - "5030:5030"
+  #     - "5031:5031"
+  #     - "50300:50300"
+  #   restart: ${RESTART_POLICY}
+  #   network_mode: ${NETWORK_MODE}
 
   # =====================================================
   # Media Managers
@@ -102,7 +102,7 @@ services:
     network_mode: ${NETWORK_MODE}
     depends_on:
       - prowlarr
-      - qbittorrent
+      # - qbittorrent
       - rdtclient
 
   sonarr:
@@ -122,7 +122,7 @@ services:
     network_mode: ${NETWORK_MODE}
     depends_on:
       - prowlarr
-      - qbittorrent
+      # - qbittorrent
       - rdtclient
 
   lidarr:
@@ -142,7 +142,7 @@ services:
     network_mode: ${NETWORK_MODE}
     depends_on:
       - prowlarr
-      - qbittorrent
+      # - qbittorrent
       - rdtclient
 
   soularr:
@@ -159,7 +159,7 @@ services:
     network_mode: ${NETWORK_MODE}
     depends_on:
       - lidarr
-      - slskd
+      # - slskd
 
   soularr2:
     image: mrusse08/soularr:latest
@@ -175,7 +175,7 @@ services:
     network_mode: ${NETWORK_MODE}
     depends_on:
       - lidarr
-      - slskd
+      # - slskd
 
   # =====================================================
   # Indexers & Related Tools
@@ -292,5 +292,18 @@ services:
       <<: *common-env
     volumes:
       - ${DATA_PATH}/media:/scan_dir
+    restart: ${RESTART_POLICY}
+    network_mode: ${NETWORK_MODE}
+
+  huntarr:
+    image: ghcr.io/plexguide/huntarr:latest
+    container_name: "${CONTAINER_PREFIX}huntarr"
+    hostname: "${CONTAINER_PREFIX}huntarr"
+    environment:
+      <<: *common-env
+    volumes:
+      - ${CONFIG_PATH}/huntarr:/config
+    ports:
+      - "9705:9705"
     restart: ${RESTART_POLICY}
     network_mode: ${NETWORK_MODE}
